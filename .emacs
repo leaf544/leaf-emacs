@@ -1,6 +1,7 @@
 ;; PREQS
 
-(require 'cl)
+;;(require 'cl) ;; Common lisp goodies
+(require 'f)
 (require 'org) ;; Org mode goodies
 (require 'package) ;; Package, MELPA
 
@@ -12,15 +13,16 @@
 
 (defvar WRITING nil)
 (defvar MODE-LINE t)
-(defvar LINES t)
-(defvar START-SCREEN t)
-(defvar INCREASE 3)
+(defvar LINES nil)
+(defvar START-SCREEN nil)
+(defvar INCREASE 1)
+(defvar THEME 'wheatgrass)
 (defvar MOTIVATION-PICS-PATH "F:/motivation")
 (defvar MARKED nil)
 
 ;; DEFUN
 
-(defun compile-cpp-gpp ()
+(defun leaf/compile-cpp-gpp ()
   "Compiles cpp programs via the GCC compiler"
   (interactive)
   (let ((compile-mode (read-string "Compile Mode: "))
@@ -36,12 +38,12 @@
       (setq compile-command (concat "g++ " (buffer-file-name) " " links " -o main_exec.exe && start main_exec.exe"))
       (shell-command compile-command)))))
 
-(defun explorer-here ()
+(defun leaf/explorer-here ()
   "Opens up the explorer in your current directory"
   (interactive)
   (shell-command "explorer ."))
 
-(defun except-close ()
+(defun leaf/except-close ()
   "Kills all buffers except the one you're working in, useful for organizing" 
   (interactive)
   (let ((work-buffer (buffer-name))
@@ -54,48 +56,65 @@
       (kill-buffer marked-buffer)
       (next-buffer))))
 
-(defun updated-revert ()
+(defun leaf/updated-revert ()
   "For dired"
   (interactive)
   (revert-buffer t t))
 
-(defun motivate-me ()
+(defun leaf/motivate-me ()
   (interactive)
   (let ((temp t))
     (dolist (file (reverse (directory-files "F:/motivation")))
       (when (not (string-equal (substring file 0 1) "."))
         (find-file (concat MOTIVATION-PICS-PATH "/" file))))))
 
-(defun mark-open ()
+(defun leaf/mark-open ()
   (interactive)
   (setq MARKED t)
+  (shell-command (concat "echo " (buffer-file-name) " > " "f:/emacs/last.txt")))
 
-  )
+(defun leaf/path-print ()
+  (interactive)
+  (print (buffer-file-name)))
+
+(defun print-leaf ()
+  (print LEAF-RING))
 
 ;; DEFUN END
 
 ;; STARTUP
 
 (when t
+  
+  (when (> (string-width (f-read-text "~/last.txt")) 2)
+    (setq read-text (f-read-text "~/last.txt"))
+    (setq str (substring read-text 0 (- (string-width read-text) 1)))
+    (message "%s" str)
+    (find-file str)
+    (setq MARKED t)
+    (shell-command (concat "break > " "f:/emacs/last.txt")))
+  
   (setq-default indent-tabs-mode nil)
   (setq-default tab-width 4)
   (setq c-set-style "k&r")
   (setq c-basic-offset 4)
-
+  
   (electric-pair-mode t) ;; Automatic pair closing
   (setq ring-bell-function 'ignore) ;; Turn off windows sounds
   (set-fringe-mode 0)
-
+  
   (tool-bar-mode -1) ;; Disable tool bar
   (menu-bar-mode -1) ;; Disable menu bar
   (toggle-scroll-bar -1) ;; Disable scroll bar
 
+  (set-face-attribute 'mode-line nil :font "Jetbrains Mono NL")
+  
   (unless MODE-LINE
     (setq-default mode-line-format nil))
 
   (when LINES
     (global-display-line-numbers-mode))
-
+  
   (kill-buffer "*scratch*")
   (kill-buffer "*Messages*")
 
@@ -105,32 +124,32 @@
   (setq inhibit-startup-message t) 
   (setq initial-scratch-message nil)
   (setq make-backup-files nil)
-
+  
   (global-auto-revert-mode t) ;; Automatic buffer revert 
 
   (custom-set-faces
-   ;; custom-set-faces was added by Custom.
-   ;; If you edit it by hand, you could mess it up, so be careful.
-   ;; Your init file should contain only one such instance.
-   ;; If there is more than one, they won't work right.
-   '(default ((t (:family "Consolas" :foundry "outline" :slant normal :weight normal :height 120 :width normal :size 23)))))
+   '(default ((t (:family "Droid Sans Mono" :foundry "outline" :slant normal :weight normal :height 120 :width normal :size b23)))))
 
   ;; EVENT BINDERS AND AWAKENERS
 
-  (global-set-key (kbd "M-s") 'compile-cpp-gpp)
-  (global-set-key (kbd "C-;") 'explorer-here)
-  (global-set-key [(meta up)] 'except-close)
-  (global-set-key (kbd "C-h C-j") 'updated-revert)
+  (global-set-key (kbd "M-s") 'leaf/compile-cpp-gpp)
+  (global-set-key (kbd "C-;") 'leaf/explorer-here)
+  (global-set-key [(meta up)] 'leaf/except-close)
+  (global-set-key (kbd "C-h C-j") 'leaf/updated-revert)
   (global-set-key (kbd "C-=") 'delete-other-windows)
-  (global-set-key [(meta down)] 'motivate-me)
+  (global-set-key [(meta down)] 'leaf/motivate-me)
+  (global-set-key (kbd "C-c C-'") 'leaf/mark-open)
 
-  (when START-SCREEN
+  (load-theme THEME)
+  
+  ;; Weird ass shit man
+
+  (when (string-equal (read-string "Open start screen? ") "y")
+    (setq START-SCREEN t))
+  
+  (when (and START-SCREEN (not MARKED))
     (setq org-startup-folded t)
-    (use-package org-bullets
-      :ensure t
-      :init
-      (add-hook 'org-mode-hook (lambda ()
-                                 (org-bullets-mode 1))))
+    (find-file "~/apt.org")
     (find-file "~/main.org")
     (find-file "~/start.org")
     (text-scale-increase INCREASE)
@@ -141,7 +160,11 @@
     ;; Probably temporary
     (split-window-right)
     (switch-to-buffer-other-window "main.org")
-    (text-scale-increase INCREASE))
-  (load-theme 'wheatgrass))
+    (text-scale-increase INCREASE)
+    (switch-to-buffer-other-window "start.org")
+    (split-window-below)
+    (switch-to-buffer-other-window "apt.org")
+    (text-scale-increase (+ INCREASE 1))
+    (switch-to-buffer-other-window "start.org")))
 
-
+;; Lisp
