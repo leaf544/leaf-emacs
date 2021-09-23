@@ -1,8 +1,13 @@
 ;; PREQS
 
+;; Increment: incf (PLACE, &optional VALUE) // requires 'CL
+;; strtok equivalent: (split-string STRING)
+
+(require 'cl-lib)
 (require 'f)
 (require 'org) ;; Org mode goodies
 (require 'package) ;; Package, MELPA
+(require 'elcord) ;; Discord
 
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives
@@ -10,12 +15,13 @@
 
  ;; GLOBALS VARIABLES
 
-(defvar WRITING nil)
+(defvar WRITING t)
 (defvar MODE-LINE t)
 (defvar LINES nil)
 (defvar START-SCREEN nil)
 (defvar INCREASE 1)
-(defvar THEME 'wheatgrass)
+(defvar THEME nil)
+(defvar DECORATE t)
 (defvar MOTIVATION-PICS-PATH "F:/motivation")
 (defvar MARKED nil)
 
@@ -71,14 +77,20 @@
   "Mark open"
   (interactive)
   (setq MARKED t)
-  (shell-command (concat "echo " (buffer-file-name) " > " "f:/emacs/last.txt " (number-to-string text-scale-mode-amount))))
+  (shell-command (concat "echo " (buffer-file-name) " > " "f:/emacs/last.txt " (number-to-string text-scale-mode-amount) " "(number-to-string (line-number-at-pos)))))
+
+(defun leaf/org-init ()
+  (setq org-hide-emphasis-markers t)
+  (transient-mark-mode t)
+  (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
 
 (defun leaf/start-screen ()
+  "Start Screen"
   (interactive)
   (when START-SCREEN
     (when (not MARKED)
       (setq org-startup-folded t)
-      (find-file "~/apt.org")
+      ;;(find-file "~/apt.org")
       (find-file "~/main.org")
       (find-file "~/start.org")
       (text-scale-increase INCREASE)
@@ -90,37 +102,119 @@
       (switch-to-buffer-other-window "main.org")
       (text-scale-increase INCREASE)
       (switch-to-buffer-other-window "start.org")
-      (split-window-below)
-      (switch-to-buffer-other-window "apt.org")
       (text-scale-increase (+ INCREASE 1))
-      (switch-to-buffer-other-window "start.org")
       (setq INCREASE 0))))
+
+(defun leaf/init-decorate ()
+  "Theme and decorations"
+
+  (set-face-attribute 'default nil :family "Consolas" :background "#F5F4E8")
+  (set-face-attribute 'mode-line nil :box nil :font "Jetbrains Mono NL" :background "#C9786D" :height 120)
+  (set-face-attribute 'mode-line-inactive nil :box nil :background "#5D8A85" :foreground "#00000")
+  (set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#710C3F")
+  (set-face-attribute 'isearch-fail nil :background "#C7839C")
+  (set-face-attribute 'isearch nil :background "#710C3F")
+  (set-face-attribute 'font-lock-preprocessor-face nil :foreground "#F63858")
+  (set-face-attribute 'font-lock-builtin-face nil :foreground "#F96161")
+  (set-face-attribute 'lazy-highlight nil :background "#0017D6")
   
+  ;; Default
+  ;; (set-face-attribute 'default nil :background "#F5F4E4" :family "Droid Sans Mono" :foreground "#000000" :height 120)
+  ;; (set-face-attribute 'region nil :background "#A9A8E8")
+  ;; (set-face-foreground 'line-number "#710C3F")
+  
+  ;; Syntax
+  (set-face-attribute 'font-lock-type-face nil :foreground "#703770")
+  (set-face-attribute 'font-lock-constant-face nil :foreground "#35455D")
+  (set-face-attribute 'font-lock-keyword-face nil :foreground "#703770")
+  (set-face-attribute 'font-lock-variable-name-face nil :foreground "#000000")
+  (set-face-attribute 'font-lock-function-name-face nil :foreground "#000000")
+  (set-face-attribute 'font-lock-comment-delimiter-face nil :foreground "#504a4c")
+  (set-face-attribute 'font-lock-comment-face nil :foreground "#636061")
+  (set-face-attribute 'font-lock-string-face nil :foreground "#703770"))
+  
+  ;; Mode Line customizations
+  ;; (set-face-attribute 'mode-line nil :box nil :font "Jetbrains Mono NL" :background "#42D601" :height 115)
+  ;; (set-face-attribute 'mode-line-inactive nil :box nil :background "#01217F" :foreground "#FFFFFF")
+  ;; (set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#710C3F")
+  ;; (set-face-attribute 'isearch-fail nil :background "#C7839C")
+  ;; (set-face-attribute 'isearch nil :background "#710C3F")
+  ;; (set-face-attribute 'font-lock-preprocessor-face nil :foreground "#F63858")
+  ;; (set-face-attribute 'font-lock-builtin-face nil :foreground "#9A4AB7")
+  ;; (set-face-attribute 'lazy-highlight nil :background "#0017D6"))
+
+(defun leaf/custom-decorate ()
+  "Theme and decorations"
+  
+  (set-face-attribute 'default nil :family "Consolas" :background "#12151a" :foreground "#dfe4eb" :weight 'normal :height 115)
+  (set-face-attribute 'mode-line nil :box nil :font "Jetbrains Mono NL" :background "#A8CCBA" :height 120)
+  (set-face-attribute 'mode-line-inactive nil :box nil :background "#A9A8E8" :foreground "#000000")
+  (set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#A8CCBA")
+  (set-face-attribute 'isearch-fail nil :background "#FF3A1D")
+  (set-face-attribute 'isearch nil :background "#710C3F")
+  (set-face-attribute 'font-lock-preprocessor-face nil :foreground "#A8CCBA")
+  (set-face-attribute 'font-lock-builtin-face nil :foreground "#A9A8E8")
+  (set-face-attribute 'lazy-highlight nil :background "#0017D6")
+  
+  ;; Default
+  ;; (set-face-attribute 'default nil :background "#F5F4E4" :family "Droid Sans Mono" :foreground "#000000" :height 120)
+  (set-face-attribute 'region nil :background "#153335")
+  ;; (set-face-foreground 'line-number "#710C3F")
+  
+  ;; Syntax
+  (set-face-attribute 'font-lock-type-face nil :foreground "#b6dce3" :weight 'bold)
+  (set-face-attribute 'font-lock-constant-face nil :foreground "#A8CCBA")
+  (set-face-attribute 'font-lock-keyword-face nil :foreground "#b6dce3")
+  (set-face-attribute 'font-lock-variable-name-face nil :foreground "#59b0c0")
+  (set-face-attribute 'font-lock-function-name-face nil :foreground "#59b0c0")
+  (set-face-attribute 'font-lock-comment-delimiter-face nil :foreground "#504a4c")
+  (set-face-attribute 'font-lock-comment-face nil :foreground "#636061")
+  (set-face-attribute 'font-lock-string-face nil :foreground "#6A8D96"))
+  
+  ;; Mode Line customizations
+  ;; (set-face-attribute 'mode-line nil :box nil :font "Jetbrains Mono NL" :background "#42D601" :height 115)
+  ;; (set-face-attribute 'mode-line-inactive nil :box nil :background "#01217F" :foreground "#FFFFFF")
+  ;; (set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#710C3F")
+  ;; (set-face-attribute 'isearch-fail nil :background "#C7839C")
+  ;; (set-face-attribute 'isearch nil :background "#710C3F")
+  ;; (set-face-attribute 'font-lock-preprocessor-face nil :foreground "#F63858")
+  ;; (set-face-attribute 'font-lock-builtin-face nil :foreground "#9A4AB7")
+  ;; (set-face-attribute 'lazy-highlight nil :background "#0017D6"))
+
+
+(defun sensible-zoom ()
+  "Zoom into files according to common sense"
+  (dotimes (i (/ (line-number-at-pos (point-max)) 61))
+    (text-scale-increase 0.4)))
+
 ;; DEFUN END
 
 ;; STARTUP
 
 (when t
-
-  (require 'elcord)
-  (elcord-mode)
-
-
+  
+  (leaf/org-init)
+  
+  (if DECORATE
+      (leaf/custom-decorate))
+  
+  ;;(elcord-mode)
+  
   (use-package org-bullets
     :ensure t
     :init
     (add-hook 'org-mode-hook (lambda ()
                                (org-bullets-mode 1))))
   
+  (find-file "~/")
+  
+  ;; Mark open business
   (when (> (string-width (f-read-text "~/last.txt")) 2)
     (setq read-text (f-read-text "~/last.txt"))
-    (setq str (substring read-text 0 (- (string-width read-text) 3)))
-    (message "%s" str)
-    (find-file str)
-    (setq increase-amount (string-to-number (substring read-text (- (string-width read-text) 1) (string-width read-text))))
-    ;;(setq increase-amount (- increase-amount 2))
-    (message "%d" increase-amount)
-    (text-scale-increase increase-amount)
+    (setq values (split-string read-text))
+    (find-file (car values))
+    (text-scale-increase (string-to-number (nth 1 values)))
+    (goto-line (string-to-number (nth 2 values)))    
     (setq MARKED t)
     (shell-command (concat "break > " "f:/emacs/last.txt")))
   
@@ -136,17 +230,26 @@
   (tool-bar-mode -1) ;; Disable tool bar
   (menu-bar-mode -1) ;; Disable menu bar
   (toggle-scroll-bar -1) ;; Disable scroll bar
-
-  (set-face-attribute 'mode-line nil :font "Jetbrains Mono NL")
   
   (unless MODE-LINE
     (setq-default mode-line-format nil))
 
+  ;; Base customizations
+  ;; (set-face-attribute 'default nil :family "Droid Sans Mono" :background "#F5F4E8")
+  ;; (set-face-attribute 'mode-line nil :box nil :font "Jetbrains Mono NL" :background "#C9786D" :height 115)
+  ;; (set-face-attribute 'mode-line-inactive nil :box nil :background "#5D8A85" :foreground "#00000")
+  ;; (set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#710C3F")
+  ;; (set-face-attribute 'isearch-fail nil :background "#C7839C")
+  ;; (set-face-attribute 'isearch nil :background "#710C3F")
+  ;; (set-face-attribute 'font-lock-preprocessor-face nil :foreground "#F63858")
+  ;; (set-face-attribute 'font-lock-builtin-face nil :foreground "#9A4AB7")
+  ;; (set-face-attribute 'lazy-highlight nil :background "#0017D6")
+  
   (when LINES
     (global-display-line-numbers-mode))
   
   (kill-buffer "*scratch*")
-  ;;(kill-buffer "*Messages*")
+  (kill-buffer "*Messages*")
 
   (toggle-frame-maximized) ;; Maximize emacs on startup
 
@@ -156,10 +259,7 @@
   (setq make-backup-files nil)
   
   (global-auto-revert-mode t) ;; Automatic buffer revert 
-
-  (custom-set-faces
-   '(default ((t (:family "Droid Sans Mono" :foundry "outline" :slant normal :weight normal :height 120 :width normal :size b23)))))
-
+  
   ;; EVENT BINDERS AND AWAKENERS
   
   (global-set-key (kbd "M-s") 'leaf/compile-cpp-gpp)
@@ -171,36 +271,26 @@
   (global-set-key (kbd "C-c C-'") 'leaf/mark-open)
   (global-set-key (kbd "M-p") 'leaf/start-screen)
   (global-set-key (kbd "M-[") 'shell)
-  (global-set-key (kbd "M-]") 'switch-to-buffer-other-frame)
+  (global-set-key (kbd "M-]") 'restart-emacs)
 
-  (load-theme THEME)
+  (defalias 'ec 'leaf/except-close)
+  
+  ;; HOOKS TO CUSTOM FUNCTIONS
+
+  (add-hook 'c-mode-common-hook 'sensible-zoom)
+  
+  (if THEME
+      (load-theme THEME t))
   
   ;; Weird ass shit man
 
-  (when (not MARKED)
-    (setq lol (string-equal (read-string "Open start screen? ") "y"))
-    (when lol
-      (setq START-SCREEN t)))
-  
-  (leaf/start-screen))
+  ;; (when (not MARKED)
+  ;;   (when (string-equal (buffer-name) "*scratch*")
+  ;;   (setq lol (string-equal (read-string "Open start screen? ") "y"))
+  ;;   (when lol
+  ;;     (setq START-SCREEN t))))
+
+  ;; Org
+    (leaf/start-screen))
 
 ;; Lisp
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(ansi-color-names-vector
-   ["#21252B" "#E06C75" "#98C379" "#E5C07B" "#61AFEF" "#C678DD" "#56B6C2" "#ABB2BF"])
- '(custom-safe-themes
-   '("5b7c31eb904d50c470ce264318f41b3bbc85545e4359e6b7d48ee88a892b1915" "1fbd63256477789327fe429bd318fb90a8a42e5f2756dd1a94805fc810ae1b62" "18cd5a0173772cdaee5522b79c444acbc85f9a06055ec54bb91491173bc90aaa" default))
- '(package-selected-packages
-   '(plan9-theme zeno-theme zenburn-theme ws-butler winum which-key wgrep volatile-highlights vi-tilde-fringe uuidgen use-package undo-tree ubuntu-theme toxi-theme toc-org terminal-here suscolors-theme spaceline solarized-theme smex smart-mode-line-powerline-theme restart-emacs request rainbow-delimiters popwin persp-mode pdf-tools pcre2el paradox org-plus-contrib org-bullets open-junk-file neotree move-text magit macrostep lorem-ipsum linum-relative link-hint ivy-hydra indent-guide hungry-delete hl-todo highlight-parentheses highlight-numbers highlight-indentation helm-make gruvbox-theme google-translate golden-ratio flx-ido fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu eval-sexp-fu elisp-slime-nav elcord dumb-jump diminish define-word dakrone-light-theme counsel-projectile company column-enforce-mode clean-aindent-mode chocolate-theme calfw bliss-theme birds-of-paradise-plus-theme berrys-theme autumn-light-theme auto-highlight-symbol auto-compile atom-dark-theme async arc-dark-theme aggressive-indent adjust-parens adaptive-wrap ace-window ace-link abyss-theme)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:family "Droid Sans Mono" :foundry "outline" :slant normal :weight normal :height 120 :width normal :size b23)))))
-
-
