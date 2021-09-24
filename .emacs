@@ -151,8 +151,8 @@
   (defalias 'mf 'leaf/mark-open)
   
   ;; HOOKS TO CUSTOM FUNCTIONS
-  (add-hook 'emacs-lisp-mode-hook 'sensible-zoom)
-  (add-hook 'c-mode-common-hook 'sensible-zoom)
-  (add-hook 'text-mode-hook 'sensible-zoom)
-  (add-hook 'bookmark-bmenu-mode-hook 'sensible-zoom))
+  (add-hook 'emacs-lisp-mode-hook 'leaf/sensible-zoom)
+  (add-hook 'c-mode-common-hook 'leaf/sensible-zoom)
+  (add-hook 'text-mode-hook 'leaf/sensible-zoom)
+  (add-hook 'bookmark-bmenu-mode-hook 'leaf/sensible-zoom))
 
