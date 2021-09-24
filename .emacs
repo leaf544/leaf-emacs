@@ -1,5 +1,4 @@
 ;; PREQS
-
 (require 'cl-lib) ;; CL
 (require 'f) ;; For file related functions
 (require 'org) ;; Org mode goodies
@@ -10,14 +9,12 @@
              '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 
  ;; GLOBALS VARIABLES
-
 (defvar MODE-LINE t)
 (defvar LINES nil)
 (defvar THEME 'migrainity)
 (defvar MARKED nil)
 
 ;; FUNCTIONS BEGIN
-
 (defun leaf/compile-cpp-gpp ()
   "Compiles cpp programs via the GCC compiler"
   (interactive)
@@ -78,7 +75,7 @@
   (transient-mark-mode t)
   (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
 
-(defun sensible-zoom ()
+(defun leaf/sensible-zoom ()
   "Zoom into files according to common sense"
   (let ((nline (line-number-at-pos (point-max))))
     (when (> (/ nline 61) 1)
@@ -86,11 +83,9 @@
         (text-scale-increase 0.4)))
     (unless (> (/ nline 61) 1)
       (text-scale-increase 2))))
-
 ;; FUNCTIONS END
 
 ;; STARTUP
-
 (when t
 
   (if THEME
@@ -140,7 +135,6 @@
   (global-auto-revert-mode t) ;; Automatic buffer revert 
   
   ;; EVENT BINDERS AND AWAKENERS
-  
   (global-set-key (kbd "M-s") 'leaf/compile-cpp-gpp)
   (global-set-key (kbd "C-;") 'leaf/explorer-here)
   (global-set-key [(meta up)] 'leaf/except-close)
@@ -152,17 +146,13 @@
   (global-set-key (kbd "M-]") 'restart-emacs)
   
   ;; ALIASES
-  
   (defalias 'ec 'leaf/except-close)
   (defalias 're 'restart-emacs)
   (defalias 'mf 'leaf/mark-open)
   
   ;; HOOKS TO CUSTOM FUNCTIONS
-
   (add-hook 'emacs-lisp-mode-hook 'sensible-zoom)
   (add-hook 'c-mode-common-hook 'sensible-zoom)
   (add-hook 'text-mode-hook 'sensible-zoom)
   (add-hook 'bookmark-bmenu-mode-hook 'sensible-zoom))
-
-;; Lisp
 
