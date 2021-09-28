@@ -24,11 +24,11 @@
     (cond
      ((string= compile-mode "0")
       (setq compile-command (concat "g++ " (buffer-file-name) " -o main_exec.exe && start main_exec.exe"))
-      (shell-command compile-command))
+      (async-shell-command compile-command))
      ((string= compile-mode "1")
       (setq links (read-string "Links: "))
       (setq compile-command (concat "g++ " (buffer-file-name) " " links " -o main_exec.exe && start main_exec.exe"))
-      (shell-command compile-command)))))
+      (async-shell-command compile-command)))))
 
 (defun leaf/explorer-here ()
   "Opens up the explorer in your current directory"
@@ -69,11 +69,13 @@
 
 (defun leaf/org-init ()
   "Org customizations"
+  (set-face-foreground 'org-todo "#A9A8E8")
   (use-package org-bullets :ensure t :init (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
   (setq org-hide-emphasis-markers t)
   (setq org-return-follows-link t)
   (transient-mark-mode t)
-  (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file))
+  (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+  (add-hook 'org-mode-hook 'leaf/sensible-zoom))
 
 (defun leaf/sensible-zoom ()
   "Zoom into files according to common sense"
@@ -83,18 +85,31 @@
         (text-scale-increase 0.4)))
     (unless (> (/ nline 61) 1)
       (text-scale-increase 2))))
+
 ;; FUNCTIONS END
 
-;; STARTUP
+;;STARTUP
 (when t
-
+  
   (if THEME
       (load-theme THEME t))
   
   (leaf/org-init)
+
+  ;; Free area
+  (set-face-attribute 'info-header-xref nil :foreground "#00000")
+  (set-face-attribute 'info-node nil :family "Jetbrains Mono NL")
+  (set-face-attribute 'info-title-1 nil :family "Jetbrains Mono NL" :height 1.1)
+
+  (setq exercise-mode-syntax-highlights
+        '(("#INT\\|#CHAR\\|#BOOL" . font-lock-type-face)
+          ("%" . font-lock-string-face)))
   
-  (kill-buffer "*scratch*")
-  (kill-buffer "*Messages*")
+  (define-derived-mode exercise-mode fundamental-mode "Exercise-Mode"
+    "Lose that APT, dawg."
+    (setq font-lock-defaults '(exercise-mode-syntax-highlights)))
+
+  (add-to-list 'auto-mode-alist '("\\.newage\\'" . exercise-mode))
   
   ;; Mark open business
   (when (> (string-width (f-read-text "~/last.txt")) 2)
@@ -106,6 +121,9 @@
     (setq MARKED t)
     (shell-command (concat "break > " "f:/emacs/last.txt")))
 
+  (unless MARKED
+    (find-file "~/main.org"))
+  
   (setq-default indent-tabs-mode nil)
   (setq-default tab-width 4)
   (setq c-set-style "k&r")
@@ -130,7 +148,11 @@
   ;; Kill irrelevant buffers
   (setq inhibit-startup-message t) 
   (setq initial-scratch-message nil)
-  (setq make-backup-files nil)
+  ;;(setq make-backup-files nil)
+
+  (kill-buffer "*scratch*")
+  (setq-default message-log-max nil)
+  (kill-buffer "*Messages*")
   
   (global-auto-revert-mode t) ;; Automatic buffer revert 
   
@@ -149,10 +171,11 @@
   (defalias 'ec 'leaf/except-close)
   (defalias 're 'restart-emacs)
   (defalias 'mf 'leaf/mark-open)
-  
+
   ;; HOOKS TO CUSTOM FUNCTIONS
   (add-hook 'emacs-lisp-mode-hook 'leaf/sensible-zoom)
   (add-hook 'c-mode-common-hook 'leaf/sensible-zoom)
   (add-hook 'text-mode-hook 'leaf/sensible-zoom)
   (add-hook 'bookmark-bmenu-mode-hook 'leaf/sensible-zoom))
+
 
